@@ -9,6 +9,7 @@ package calendar
 
 import (
 	"fmt"
+	"sync"
 	"time"
 
 	// Embed the IANA timezone database so non-local timezones can be loaded
@@ -70,6 +71,7 @@ type Calendar struct {
 	holidays  map[string]bool // "YYYY-MM-DD"
 	recurring map[string]bool // "MM-DD"
 	memo      map[string]bool
+	memoMu    sync.Mutex
 }
 
 // New validates cfg and returns an immutable Calendar.
@@ -119,6 +121,8 @@ func (c *Calendar) Timezone() string {
 // holiday. A holiday that falls on a weekend is treated only as a weekend (no
 // extra deduction, no observance shift).
 func (c *Calendar) IsBusinessDay(d Date) bool {
+	c.memoMu.Lock()
+	defer c.memoMu.Unlock()
 	key := d.String()
 	if cached, ok := c.memo[key]; ok {
 		return cached
